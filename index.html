@@ -267,6 +267,9 @@ tbody tr{animation:fadeIn .2s ease both}
     <!-- BODY GRID -->
     <div class="body-grid">
 
+      <!-- LEFT COLUMN (table + TL;DR) -->
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+
       <!-- TABLE -->
       <div class="table-card">
         <div class="card-header">
@@ -320,6 +323,39 @@ tbody tr{animation:fadeIn .2s ease both}
           </table>
         </div>
       </div>
+
+      <!-- TL;DR SUMMARY TABLE -->
+      <div class="summary-card" id="summaryCard" style="display:none">
+        <div class="card-header">
+          <div>
+            <div class="card-title">&#x1F4CB; Quick Decision Summary — Top 5 Picks</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:monospace">
+              <span style="color:var(--gold);font-weight:700">TL;DR</span> = Too Long; Didn't Read &nbsp;·&nbsp; Side-by-side snapshot of the strongest setups right now
+            </div>
+          </div>
+          <div class="tl-badge">TL;DR</div>
+        </div>
+        <div class="table-wrap" style="max-height:none">
+          <table>
+            <thead>
+              <tr>
+                <th>RANK</th>
+                <th>COIN</th>
+                <th>CONVICTION</th>
+                <th>RSI</th>
+                <th>TREND ALIGNED</th>
+                <th>VOL CONFIRMED</th>
+                <th>MACD</th>
+                <th>STOCH RSI</th>
+                <th>BEST FOR</th>
+              </tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      </div><!-- end left column -->
 
       <!-- RIGHT COLUMN -->
       <div class="right-col">
@@ -384,37 +420,6 @@ tbody tr{animation:fadeIn .2s ease both}
 
       </div>
     </div><!-- end body grid -->
-
-    <!-- TL;DR SUMMARY TABLE -->
-    <div class="summary-card" id="summaryCard" style="display:none">
-      <div class="card-header">
-        <div>
-          <div class="card-title">&#x1F4CB; Quick Decision Summary — Top 5 Picks</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:monospace">
-            <span style="color:var(--gold);font-weight:700">TL;DR</span> = Too Long; Didn't Read &nbsp;·&nbsp; Side-by-side snapshot of the strongest setups right now
-          </div>
-        </div>
-        <div class="tl-badge">TL;DR</div>
-      </div>
-      <div class="table-wrap" style="max-height:none">
-        <table>
-          <thead>
-            <tr>
-              <th>RANK</th>
-              <th>COIN</th>
-              <th>CONVICTION</th>
-              <th>RSI</th>
-              <th>TREND ALIGNED</th>
-              <th>VOL CONFIRMED</th>
-              <th>MACD</th>
-              <th>STOCH RSI</th>
-              <th>BEST FOR</th>
-            </tr>
-          </thead>
-          <tbody id="summaryBody"></tbody>
-        </table>
-      </div>
-    </div>
 
   </main>
 </div><!-- end dashboard -->
