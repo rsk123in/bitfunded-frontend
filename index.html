@@ -308,10 +308,11 @@ tbody tr{animation:fadeIn .2s ease both}
                 <th onclick="sortBy('volRel')">VOL REL</th>
                 <th onclick="sortBy('gapEma50')">SMA50 GAP</th>
                 <th onclick="sortBy('vol')">VOLUME</th>
+                <th onclick="sortBy('fundingRate')">FUNDING</th>
               </tr>
             </thead>
             <tbody id="tableBody">
-              <tr><td colspan="15" style="padding:40px;text-align:center;color:var(--muted);font-family:monospace">Loading...</td></tr>
+              <tr><td colspan="16" style="padding:40px;text-align:center;color:var(--muted);font-family:monospace">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -355,6 +356,12 @@ tbody tr{animation:fadeIn .2s ease both}
           <div class="bias-row"><div class="bias-lbl">Avg RSI</div>        <div class="bias-val" id="avgRsiBias">—</div></div>
           <div class="bias-row"><div class="bias-lbl">Above EMA50</div>   <div class="bias-val" id="emaAbove">—</div></div>
           <div class="bias-row"><div class="bias-lbl">Hot Volume (2x+)</div><div class="bias-val" id="hotVol">—</div></div>
+          <div style="height:1px;background:var(--bdr);margin:10px 0"></div>
+          <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:monospace;margin-bottom:8px">&#x1F4CA; Market Breadth</div>
+          <div id="breadthBar" style="height:8px;border-radius:4px;overflow:hidden;display:flex;margin-bottom:8px"></div>
+          <div class="bias-row"><div class="bias-lbl">&#x1F7E2; Bull Aligned</div><div class="bias-val" id="breadthBull">—</div></div>
+          <div class="bias-row"><div class="bias-lbl">&#x1F534; Bear Aligned</div><div class="bias-val" id="breadthBear">—</div></div>
+          <div class="bias-row"><div class="bias-lbl">&#x26AA; Neutral</div><div class="bias-val" id="breadthNeu">—</div></div>
         </div>
 
         <!-- TOP MOVERS -->
@@ -499,6 +506,7 @@ function buildAnalysis(c){
 // ── STATE ──────────────────────────────────────────────────────────────────
 let allCoins=[];
 let totalScanned=0;
+let breadthData=null;
 let curFilter='all',sortKey='trendScore',sortDir=-1;
 
 // ── LOAD FROM API ──────────────────────────────────────────────────────────
@@ -519,6 +527,7 @@ async function startLoad(){
     if(data.error)throw new Error(data.error);
     setLoad(`Processing ${data.count} coins...`,90);
 
+    breadthData=data.breadth||null;
     allCoins=data.coins.map(c=>({
       symbol:   c.symbol,
       name:     c.name,
@@ -540,9 +549,13 @@ async function startLoad(){
       shortScore:c.shortScore??0,
       medScore: c.medScore??0,
       longScore:c.longScore??0,
-      macd:     c.macd,
-      ema50:    c.ema50,
-      sma200:   c.sma200,
+      macd:        c.macd,
+      ema50:       c.ema50,
+      sma200:      c.sma200,
+      atrPct:      c.atrPct,
+      rsiZone:     c.rsiZone||'normal',
+      fundingRate: c.fundingRate,
+      oi:          c.oi,
     }));
     totalScanned=data.scanned||allCoins.length;
 
@@ -707,7 +720,7 @@ function getRows(){
 function renderTable(){
   const rows=getRows();
   document.getElementById('resultCount').textContent=rows.length+' RESULTS';
-  if(!rows.length){document.getElementById('tableBody').innerHTML='<tr><td colspan="15" style="padding:30px;text-align:center;color:var(--muted);font-family:monospace">No results for this filter</td></tr>';return}
+  if(!rows.length){document.getElementById('tableBody').innerHTML='<tr><td colspan="16" style="padding:30px;text-align:center;color:var(--muted);font-family:monospace">No results for this filter</td></tr>';return}
   document.getElementById('tableBody').innerHTML=rows.map((c,i)=>{
     const col=cc(c.symbol);
     const pc=c.p24>=0?'pos':'neg',p1c=c.p1>=0?'pos':'neg';
@@ -739,6 +752,7 @@ function renderTable(){
       <td class="mono" style="color:${vrCol}">${vrTxt}</td>
       <td class="mono" style="color:${gapCol}">${c.gapEma50>0?'+':''}${(c.gapEma50??0).toFixed(1)}%</td>
       <td class="mono" style="color:var(--muted)">${fv(c.vol)}</td>
+      ${(()=>{const fr=c.fundingRate;if(fr==null)return'<td class="mono" style="color:var(--muted)">—</td>';const frCol=fr>0.05?'var(--red)':fr<-0.01?'var(--green)':'var(--muted2)';return`<td class="mono" style="color:${frCol};font-size:11px">${(fr>0?'+':'')+fr.toFixed(4)}%</td>`})()}
     </tr>`;
   }).join('');
 }
@@ -782,6 +796,22 @@ function renderRight(){
   set('avgRsiBias',isNaN(avgRsi)?'—':avgRsi.toFixed(1),avgRsi>60?'var(--red)':avgRsi<40?'var(--green)':'var(--gold)');
   set('emaAbove',`${aboveEma} / ${allCoins.length}`,'var(--purple)');
   set('hotVol',`${hotCoins.length} coins (${hotCoins.slice(0,3).map(c=>c.name).join(', ')}${hotCoins.length>3?'...':''})`,hotCoins.length>0?'var(--orange)':'var(--muted)');
+
+  // Market breadth (uses API breadthData if available, else compute from allCoins)
+  const bd = breadthData || {
+    bull: bulls.length, bear: allCoins.filter(c=>c.t4==='bear').length,
+    neutral: allCoins.filter(c=>c.t4!=='bull'&&c.t4!=='bear').length,
+    bullPct: bullPct.toFixed(1)*1,
+    bearPct: (allCoins.filter(c=>c.t4==='bear').length/Math.max(allCoins.length,1)*100),
+    neuPct:  (allCoins.filter(c=>c.t4!=='bull'&&c.t4!=='bear').length/Math.max(allCoins.length,1)*100),
+  };
+  document.getElementById('breadthBar').innerHTML=
+    `<div style="flex:${bd.bullPct};background:var(--green);opacity:.8"></div>`+
+    `<div style="flex:${bd.bearPct};background:var(--red);opacity:.8"></div>`+
+    `<div style="flex:${bd.neuPct};background:var(--muted);opacity:.5"></div>`;
+  set('breadthBull',`${bd.bull} coins (${bd.bullPct.toFixed(1)}%)`,'var(--green)');
+  set('breadthBear',`${bd.bear} coins (${bd.bearPct.toFixed(1)}%)`,'var(--red)');
+  set('breadthNeu', `${bd.neutral} coins (${bd.neuPct.toFixed(1)}%)`,'var(--muted)');
 
   // Top movers
   const gainers=[...allCoins].sort((a,b)=>b.p24-a.p24).slice(0,5);
